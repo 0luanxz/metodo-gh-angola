@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diagnóstico GH Angola</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    .radio-input {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .radio-input label {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 0px 20px;
+      width: 100%;
+      cursor: pointer;
+      height: 50px;
+      position: relative;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 2px solid #ed1c24;
+      background-color: #111;
+      transition: border 0.3s, box-shadow 0.3s, background-color 0.3s;
+    }
+
+    .radio-input label:hover {
+      background-color: #1a1a1a;
+    }
+
+    .radio-input label input[type="radio"] {
+      background-color: #202030;
+      appearance: none;
+      width: 17px;
+      height: 17px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: 2px solid #fff;
+    }
+
+    .radio-input label input[type="radio"]:checked {
+      background-color: #ed1c24;
+    }
+
+    .radio-input label input[type="radio"]::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: #fff;
+      transform: scale(0);
+    }
+
+    .radio-input label input[type="radio"]:checked::before {
+      transform: scale(1);
+    }
+
+    .radio-input label input[type="radio"]:checked ~ .text {
+      background-color: #ed1c24;
+      color: #fff;
+      box-shadow: 0 0 8px #ed1c24;
+    }
+
+    .radio-input .text {
+      color: #fff;
+      padding: 10px;
+      border-radius: 8px;
+      width: 100%;
+      text-align: center;
+      background-color: #111;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    input[type="number"]::placeholder {
+      color: #999;
+    }
+
+    input[type="number"] {
+      background-color: #111;
+      border: 2px solid #ed1c24;
+      color: white; 
+    }  
+
+    @keyframes loading-bar {
+      0% { width: 0%; }
+      100% { width: 100%; }
+    }
+
+    .animate-loading-bar {
+      animation: loading-bar 20s linear forwards;
+    }
+
+  </style>
+</head>
+<body class="bg-black text-white min-h-screen px-6 py-12">
+  <div class="w-full max-w-4xl mx-auto px-4 py-8">
+    <div class="text-center mb-12">
+      <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-1">Análise de Potencial</h1>
+      <h2 class="text-xl md:text-2xl font-semibold text-red-600">Descubra Seu Potencial de Altura</h2>
+    </div>
+
+    <div class="mb-8">
+      <p id="progress-text" class="text-gray-400 text-center">Pergunta 1 de 10</p>
+      <div class="w-full h-2 bg-gray-800 rounded-full overflow-hidden mb-8">
+        <div id="progress-bar" class="h-full bg-gradient-to-r from-red-600 to-red-500 transition-all duration-500" style="width: 10%;"></div>
+      </div>
+    </div>
+
+    <div id="question-container" class="w-full max-w-2xl mx-auto">
+      <!-- Pergunta dinâmica será carregada aqui -->
+    </div>
+  </div>
+    
+  
+  
+  <script>
+    const questions = [
+      {
+        pergunta: "Qual a sua idade?",
+        name: "idade",
+        opcoes: ["Menos de 15 anos", "15 a 18 anos", "19 a 25 anos", "Mais de 25 anos"]
+      },
+      {
+        pergunta: "Você dorme quantas horas por noite?",
+        name: "sono",
+        opcoes: ["Menos de 6h", "6h a 7h", "8h a 9h", "Mais de 9h"]
+      },
+      {
+        pergunta: "Você faz alguma atividade física?",
+        name: "atividade",
+        opcoes: ["Nunca", "1-2 vezes por semana", "3-5 vezes por semana", "Todos os dias"]
+      },
+      {
+        pergunta: "Sua alimentação é equilibrada?",
+        name: "alimentacao",
+        opcoes: ["Nada equilibrada", "Mais ou menos", "Sim, equilibrada", "Muito saudável"]
+      },
+      {
+        pergunta: "Você toma algum suplemento?",
+        name: "suplemento",
+        opcoes: ["Não", "Às vezes", "Sim, regularmente"]
+      },
+      {
+        pergunta: "Você fuma ou bebe com frequência?",
+        name: "habitos",
+        opcoes: ["Fumo e bebo", "Só bebo", "Só fumo", "Nenhum dos dois"]
+      },
+      {
+        pergunta: "Você costuma se estressar com facilidade?",
+        name: "estresse",
+        opcoes: ["Sempre", "Às vezes", "Raramente", "Nunca"]
+      },
+      {
+        pergunta: "Você já teve algum problema hormonal diagnosticado?",
+        name: "hormonal",
+        opcoes: ["Sim", "Não", "Não sei"]
+      },
+      {
+        pergunta: "Qual a altura dos seus pais?",
+        name: "genetica",
+        opcoes: ["Ambos baixos", "Um alto e outro baixo", "Ambos médios", "Ambos altos"]
+      },
+      {
+        pergunta: "Você poderia dedicar 50 minutos por dia para ganhar até 8cm de altura?",
+        name: "dedicacao",
+        opcoes: ["Sim, quero meu plano agora", "Talvez, dependendo da rotina", "Não tenho certeza"]
+      }
+    ];
+
+    let currentIndex = 0;
+    const respostas = {};
+
+    function renderQuestion() {
+      const container = document.getElementById("question-container");
+
+      if (currentIndex < questions.length) {
+        const q = questions[currentIndex];
+        let html = `<h2 class="text-2xl font-bold text-white text-center mb-6">${q.pergunta}</h2><div class="radio-input">`;
+        q.opcoes.forEach((opcao, idx) => {
+          html += `
+            <label>
+              <input type="radio" name="${q.name}" value="${opcao}" class="hidden">
+              <span class="text">${opcao}</span>
+            </label>`;
+        });
+        html += `</div><div class="mt-8 flex justify-between">`;
+
+        if (currentIndex > 0) {
+          html += `
+            <button id="prev-button" class="flex items-center justify-center px-6 py-3 rounded-lg font-bold text-white transition-all duration-200 bg-gray-700 hover:bg-gray-600">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+              </svg>
+              Voltar
+            </button>`;
+        } else {
+          html += `<div></div>`;
+        }
+
+        html += `
+            <button id="next-button" class="flex items-center justify-center px-6 py-3 rounded-lg font-bold text-white transition-all duration-200 bg-red-600 hover:bg-red-700">
+              Próxima Pergunta
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>`;
+
+        container.innerHTML = html;
+
+        if (currentIndex > 0) {
+          document.getElementById("prev-button").addEventListener("click", () => {
+            currentIndex--;
+            updateProgress();
+            renderQuestion();
+          });
+        }
+
+        document.getElementById("next-button").addEventListener("click", () => {
+          const selected = document.querySelector(`input[name="${q.name}"]:checked`);
+          if (!selected) {
+            alert("Por favor, selecione uma opção para continuar.");
+            return;
+          }
+          respostas[q.name] = selected.value;
+          currentIndex++;
+          updateProgress();
+          renderQuestionOrEnd();
+        });
+      } else {
+        container.innerHTML = `
+          <h2 class="text-2xl font-bold text-white text-center mb-6">Última Etapa</h2>
+          <div class="flex flex-col gap-4">
+            <input type="number" id="alturaFinal" placeholder="Qual sua altura atual? (metro, cm)" class="px-4 py-3 rounded-md" />
+            <input type="number" id="idadeFinal" placeholder="Qual sua idade?" class="px-4 py-3 rounded-md" />
+          </div>
+          <div class="mt-8 flex justify-between">
+            <button id="prev-button" class="flex items-center justify-center px-6 py-3 rounded-lg font-bold text-white transition-all duration-200 bg-gray-700 hover:bg-gray-600">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+              </svg>
+              Voltar
+            </button>
+            <button id="submit-button" class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg flex items-center transition-all">
+              Calcular Resultado
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+              </svg>
+            </button>
+          </div>
+        `;
+
+        document.getElementById("prev-button").addEventListener("click", () => {
+          currentIndex--;
+          updateProgress();
+          renderQuestion();
+        });
+
+        document.getElementById("submit-button").addEventListener("click", () => {
+  respostas.alturaAtual = document.getElementById("alturaFinal").value;
+  respostas.idadeFinal = document.getElementById("idadeFinal").value;
+
+  // Esconder conteúdo atual
+  document.body.querySelector("main")?.classList?.add("hidden");
+  document.getElementById("question-container").classList.add("hidden");
+
+  // Mostrar tela de carregamento
+  document.getElementById("loading-section").classList.remove("hidden");
+
+  // Animação da barra de carregamento
+  const bar = document.getElementById("loading-bar");
+  bar.classList.add("animate-loading-bar");
+
+  // Após 20 segundos, mostrar mensagem final com gráfico
+setTimeout(() => {
+  document.getElementById("loading-section").innerHTML = `
+    <div class="text-center">
+      <h2 class="text-3xl font-bold mb-4 text-green-400">Análise Concluída!</h2>
+      <p class="text-lg mb-10 text-white">Com base nas suas respostas, você ainda pode ganhar até <span class="text-red-500 font-bold text-2xl">+${[8, 9, 10, 11][Math.floor(Math.random() * 4)]}cm</span> naturalmente.</p>
+
+      <!-- Gráficos de Progresso -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        <!-- Altura Atual -->
+        <div class="border border-zinc-700 rounded-md bg-gray-900 p-6 text-center">
+          <div class="relative flex items-center justify-center mb-4">
+            <svg width="100" height="100" class="rotate-[-90deg]">
+              <circle cx="50" cy="50" r="40" stroke="currentColor" stroke-width="10" class="text-zinc-700" fill="none"></circle>
+              <circle cx="50" cy="50" r="40" stroke="currentColor" stroke-width="10" stroke-linecap="round" class="text-yellow-500" fill="none" stroke-dasharray="251" stroke-dashoffset="118"></circle>
+            </svg>
+            <span class="absolute text-xl font-bold text-yellow-500">53%</span>
+          </div>
+          <p class="text-gray-300">Altura Atual</p>
+        </div>
+
+        <!-- Potencial -->
+        <div class="border border-zinc-700 rounded-md bg-gray-900 p-6 text-center">
+          <div class="relative flex items-center justify-center mb-4">
+            <svg width="100" height="100" class="rotate-[-90deg]">
+              <circle cx="50" cy="50" r="40" stroke="currentColor" stroke-width="10" class="text-zinc-700" fill="none"></circle>
+              <circle cx="50" cy="50" r="40" stroke="currentColor" stroke-width="10" stroke-linecap="round" class="text-green-500" fill="none" stroke-dasharray="251" stroke-dashoffset="17"></circle>
+            </svg>
+            <span class="absolute text-xl font-bold text-green-500">93%</span>
+          </div>
+          <p class="text-gray-300">Potencial de Altura</p>
+        </div>
+
+        <!-- Motivação -->
+        <div class="border border-zinc-700 rounded-md bg-gray-900 p-6 text-center">
+          <div class="relative flex items-center justify-center mb-4">
+            <svg width="100" height="100" class="rotate-[-90deg]">
+              <circle cx="50" cy="50" r="40" stroke="currentColor" stroke-width="10" class="text-zinc-700" fill="none"></circle>
+              <circle cx="50" cy="50" r="40" stroke="currentColor" stroke-width="10" stroke-linecap="round" class="text-red-500" fill="none" stroke-dasharray="251" stroke-dashoffset="35"></circle>
+            </svg>
+            <span class="absolute text-xl font-bold text-red-500">86%</span>
+          </div>
+          <p class="text-gray-300">Motivação</p>
+        </div>
+      </div>
+
+      <a href="https://pay.kuenha.com/2ae3354f-0e82-4796-abda-76565e897ddc" target="_blank" class="bg-red-600 hover:bg-red-700 px-6 py-3 rounded-lg text-white font-bold transition-all">Quero começar agora</a>
+    </div>
+  `;
+}, 20000);
+
+});
+
+      }
+    }
+
+    function updateProgress() {
+      const progress = ((currentIndex) / (questions.length + 1)) * 100;
+      document.getElementById("progress-bar").style.width = progress + "%";
+      document.getElementById("progress-text").textContent = `Pergunta ${Math.min(currentIndex + 1, questions.length + 1)} de ${questions.length + 1}`;
+    }
+
+    function renderQuestionOrEnd() {
+      renderQuestion();
+    }
+
+    renderQuestion();
+  </script>
+    
+    <!-- Tela de Carregamento -->
+<div id="loading-section" class="hidden fixed inset-0 bg-black text-white flex flex-col items-center justify-center z-50">
+  <div class="w-full max-w-md text-center px-4">
+    <h2 class="text-3xl font-bold mb-4 animate-pulse">Analisando seu potencial...</h2>
+    <p class="mb-8 text-lg text-gray-400">Estamos processando suas respostas para calcular o quanto você ainda pode crescer naturalmente.</p>
+    
+    <div class="w-full h-2 bg-gray-700 rounded-full mb-6 overflow-hidden">
+      <div id="loading-bar" class="h-full bg-red-600 animate-loading-bar" style="width: 0%"></div>
+    </div>
+    
+    <p class="text-sm text-gray-500">Isso pode levar até 20 segundos...</p>
+  </div>
+</div>
+
+</body>
+</html>
